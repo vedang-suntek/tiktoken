@@ -1,7 +1,72 @@
-# ⏳ tiktoken
+# Tiktoken Counter
 
-tiktoken is a fast [BPE](https://en.wikipedia.org/wiki/Byte_pair_encoding) tokeniser for use with
-OpenAI's models.
+A simple web application to analyze token counts for text, documents, and images using OpenAI's tiktoken library.
+
+## Features
+
+- Count tokens in text input
+- Upload and analyze text files (.txt, .md, .csv, .json, code files, etc.)
+- Approximate token usage for images (based on GPT-4 Vision specifications)
+- Support for multiple OpenAI models
+- Drag and drop file uploads
+- Clean, modern user interface
+
+## Requirements
+
+- Python 3.7+
+- Flask
+- tiktoken
+
+## Installation
+
+1. Clone this repository:
+
+```bash
+git clone https://github.com/yourusername/tiktoken-counter.git
+cd tiktoken-counter
+```
+
+2. Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+1. Run the application:
+
+```bash
+python token_counter_app.py
+```
+
+2. Open your web browser and go to:
+
+```
+http://localhost:5000
+```
+
+3. Use the interface to:
+   - Enter text directly and analyze token count
+   - Upload and analyze text files
+   - Upload and get approximate token count for images
+
+## Why Token Counting Matters
+
+Token counting is essential for:
+- Estimating API costs when using OpenAI's models
+- Ensuring your input fits within model context windows
+- Optimizing prompts and responses for efficiency
+
+## How It Works
+
+This application uses OpenAI's tiktoken library, which is the same tokenizer used by their models. This ensures accurate token counts that match what you'll be charged for when using the API.
+
+For text and documents, exact token counts are provided. For images, approximate token counts are provided based on OpenAI's guidelines for vision models.
+
+## License
+
+MIT
 
 ```python
 import tiktoken

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiktoken Counter - Token Count Analysis Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .container {
+            max-width: 900px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4a4a4a;
+            font-weight: 600;
+        }
+        .header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+        .tab-content {
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .token-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            display: none;
+        }
+        .token-count {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .token-details {
+            margin-top: 15px;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .drop-zone:hover {
+            border-color: #999;
+        }
+        .drop-zone-active {
+            border-color: #28a745;
+            background-color: #f8fff8;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 10px auto;
+            display: none;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Tiktoken Counter</h1>
+            <p>Analyze token counts for text, documents, and images</p>
+        </div>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab" aria-controls="text" aria-selected="true">Text Input</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file" type="button" role="tab" aria-controls="file" aria-selected="false">File Upload</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image" type="button" role="tab" aria-controls="image" aria-selected="false">Image Analysis</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- Text Input Tab -->
+            <div class="tab-pane fade show active" id="text" role="tabpanel" aria-labelledby="text-tab">
+                <form id="textForm">
+                    <div class="form-group">
+                        <label for="modelSelect" class="form-label">Select Model:</label>
+                        <select class="form-select" id="modelSelect" name="model">
+                            {% for model in models %}
+                            <option value="{{ model }}">{{ model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="textInput" class="form-label">Enter your text:</label>
+                        <textarea class="form-control" id="textInput" name="text" rows="8" placeholder="Type or paste your text here..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Count Tokens</button>
+                </form>
+                
+                <div class="token-result" id="textResult">
+                    <div class="token-count" id="textTokenCount">0</div>
+                    <div class="text-center mb-3">Tokens</div>
+                    <div class="token-details">
+                        <div class="row">
+                            <div class="col-md-6 text-center">
+                                <p><strong>Characters:</strong> <span id="textCharCount">0</span></p>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <p><strong>Words:</strong> <span id="textWordCount">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Upload Tab -->
+            <div class="tab-pane fade" id="file" role="tabpanel" aria-labelledby="file-tab">
+                <form id="fileForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="fileModelSelect" class="form-label">Select Model:</label>
+                        <select class="form-select" id="fileModelSelect" name="model">
+                            {% for model in models %}
+                            <option value="{{ model }}">{{ model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fileInput" class="form-label">Upload a text file:</label>
+                        <div class="drop-zone" id="fileDropZone">
+                            <span>Drop file here or click to upload</span>
+                            <input type="file" class="form-control d-none" id="fileInput" name="file" accept=".txt,.md,.csv,.json,.py,.js,.html,.css,.xml,.yaml,.cpp,.c,.h,.java,.rb,.php,.pl,.sh,.bat,.swift,.kt,.go,.rs,.ts">
+                        </div>
+                        <small class="form-text text-muted">Supported formats: txt, md, csv, json, and various code files</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Count Tokens</button>
+                </form>
+                
+                <div class="token-result" id="fileResult">
+                    <div class="token-count" id="fileTokenCount">0</div>
+                    <div class="text-center mb-3">Tokens</div>
+                    <div class="token-details">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <p><strong>File:</strong> <span id="fileName">-</span></p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <p><strong>Characters:</strong> <span id="fileCharCount">0</span></p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <p><strong>Words:</strong> <span id="fileWordCount">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Analysis Tab -->
+            <div class="tab-pane fade" id="image" role="tabpanel" aria-labelledby="image-tab">
+                <form id="imageForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="imageModelSelect" class="form-label">Model:</label>
+                        <select class="form-select" id="imageModelSelect" name="model">
+                            <option value="gpt-4-vision-preview">GPT-4 Vision</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="imageDetailLevel" class="form-label">Detail Level:</label>
+                        <select class="form-select" id="imageDetailLevel" name="detail">
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                        </select>
+                        <small class="form-text text-muted">High: Better image analysis but higher token usage. Low: Fixed 85 tokens.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="imageInput" class="form-label">Upload an image:</label>
+                        <div class="drop-zone" id="imageDropZone">
+                            <span>Drop image here or click to upload</span>
+                            <input type="file" class="form-control d-none" id="imageInput" name="image" accept="image/*">
+                        </div>
+                        <small class="form-text text-muted">Supported formats: JPG, PNG, GIF, WebP</small>
+                    </div>
+                    <img id="imagePreview" class="image-preview" alt="Image Preview">
+                    <button type="submit" class="btn btn-primary">Calculate Image Tokens</button>
+                </form>
+                
+                <div class="token-result" id="imageResult">
+                    <div class="token-count" id="imageTokenCount">0</div>
+                    <div class="text-center mb-3">Tokens</div>
+                    <div class="token-details">
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <p><strong>File:</strong> <span id="imageFileName">-</span></p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <p><strong>Dimensions:</strong> <span id="imageDimensions">-</span></p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <p><strong>Detail:</strong> <span id="imageDetailUsed">-</span></p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <p><strong>Tiles:</strong> <span id="imageTiles">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h3>About Tiktoken Counter</h3>
+                <p>
+                    This tool helps you calculate token usage for your OpenAI API requests. Tokens are the basic units of text that the model processes, and knowing the token count is essential for:
+                </p>
+                <ul>
+                    <li>Estimating API costs</li>
+                    <li>Ensuring your inputs fit within model context limits</li>
+                    <li>Optimizing prompt designs</li>
+                </ul>
+                <h4>How Image Tokens Are Calculated</h4>
+                <p>
+                    For GPT-4 Vision, image token usage follows these rules:
+                </p>
+                <ul>
+                    <li><strong>Low detail:</strong> Fixed 85 tokens per image regardless of size</li>
+                    <li><strong>High detail:</strong> 
+                        <ul>
+                            <li>Base cost: 85 tokens</li>
+                            <li>The image is resized to max 2048x2048</li>
+                            <li>If both dimensions exceed 768px, image is scaled so the shortest side is 768px</li>
+                            <li>Image is divided into 512x512 pixel tiles</li>
+                            <li>Each tile costs 170 additional tokens</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer class="container">
+        <p>Powered by OpenAI's Tiktoken Library | <a href="https://github.com/openai/tiktoken" target="_blank">GitHub</a></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Text form submission
+            document.getElementById('textForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const model = document.getElementById('modelSelect').value;
+                const text = document.getElementById('textInput').value;
+                
+                fetch('/count-tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ model, text }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    document.getElementById('textTokenCount').textContent = data.token_count;
+                    document.getElementById('textCharCount').textContent = data.character_count;
+                    document.getElementById('textWordCount').textContent = data.word_count;
+                    document.getElementById('textResult').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to count tokens: ' + error);
+                });
+            });
+
+            // File form submission
+            document.getElementById('fileForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData();
+                const fileInput = document.getElementById('fileInput');
+                
+                if (!fileInput.files.length) {
+                    alert('Please select a file');
+                    return;
+                }
+                
+                formData.append('file', fileInput.files[0]);
+                formData.append('model', document.getElementById('fileModelSelect').value);
+                
+                fetch('/count-file-tokens', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    document.getElementById('fileTokenCount').textContent = data.token_count;
+                    document.getElementById('fileCharCount').textContent = data.character_count;
+                    document.getElementById('fileWordCount').textContent = data.word_count;
+                    document.getElementById('fileName').textContent = data.filename;
+                    document.getElementById('fileResult').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to count tokens: ' + error);
+                });
+            });
+
+            // Image form submission
+            document.getElementById('imageForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData();
+                const imageInput = document.getElementById('imageInput');
+                
+                if (!imageInput.files.length) {
+                    alert('Please select an image');
+                    return;
+                }
+                
+                formData.append('image', imageInput.files[0]);
+                formData.append('model', document.getElementById('imageModelSelect').value);
+                formData.append('detail', document.getElementById('imageDetailLevel').value);
+                
+                // Show loading state
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.textContent;
+                submitButton.textContent = 'Processing...';
+                submitButton.disabled = true;
+                
+                fetch('/count-image-tokens', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Reset button state
+                    submitButton.textContent = originalButtonText;
+                    submitButton.disabled = false;
+                    
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Update the UI with the token count results
+                    document.getElementById('imageTokenCount').textContent = data.token_count;
+                    document.getElementById('imageFileName').textContent = data.filename;
+                    document.getElementById('imageDimensions').textContent = `${data.width}x${data.height}`;
+                    document.getElementById('imageDetailUsed').textContent = data.detail;
+                    
+                    // Calculate tiles
+                    if (data.detail === 'high') {
+                        if (data.total_tiles) {
+                            document.getElementById('imageTiles').textContent = data.total_tiles;
+                        } else {
+                            const tiles = Math.ceil(data.width / 512) * Math.ceil(data.height / 512);
+                            document.getElementById('imageTiles').textContent = tiles;
+                        }
+                    } else {
+                        document.getElementById('imageTiles').textContent = 'N/A (low detail)';
+                    }
+                    
+                    document.getElementById('imageResult').style.display = 'block';
+                })
+                .catch(error => {
+                    // Reset button state
+                    submitButton.textContent = originalButtonText;
+                    submitButton.disabled = false;
+                    
+                    console.error('Error:', error);
+                    alert('Failed to calculate image tokens: ' + error.message);
+                });
+            });
+
+            // File drop zone functionality
+            const fileDropZone = document.getElementById('fileDropZone');
+            const fileInput = document.getElementById('fileInput');
+            
+            fileDropZone.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length) {
+                    fileDropZone.querySelector('span').textContent = `File selected: ${fileInput.files[0].name}`;
+                }
+            });
+            
+            ['dragover', 'dragenter'].forEach(eventName => {
+                fileDropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    fileDropZone.classList.add('drop-zone-active');
+                });
+            });
+            
+            ['dragleave', 'dragend'].forEach(eventName => {
+                fileDropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    fileDropZone.classList.remove('drop-zone-active');
+                });
+            });
+            
+            fileDropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                fileDropZone.classList.remove('drop-zone-active');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileDropZone.querySelector('span').textContent = `File selected: ${e.dataTransfer.files[0].name}`;
+                }
+            });
+
+            // Image drop zone functionality
+            const imageDropZone = document.getElementById('imageDropZone');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreview = document.getElementById('imagePreview');
+            
+            imageDropZone.addEventListener('click', function() {
+                imageInput.click();
+            });
+            
+            imageInput.addEventListener('change', function() {
+                if (imageInput.files.length) {
+                    const file = imageInput.files[0];
+                    imageDropZone.querySelector('span').textContent = `File selected: ${file.name}`;
+                    displayImagePreview(file);
+                }
+            });
+            
+            ['dragover', 'dragenter'].forEach(eventName => {
+                imageDropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    imageDropZone.classList.add('drop-zone-active');
+                });
+            });
+            
+            ['dragleave', 'dragend'].forEach(eventName => {
+                imageDropZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    imageDropZone.classList.remove('drop-zone-active');
+                });
+            });
+            
+            imageDropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                imageDropZone.classList.remove('drop-zone-active');
+                if (e.dataTransfer.files.length) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.type.startsWith('image/')) {
+                        imageInput.files = e.dataTransfer.files;
+                        imageDropZone.querySelector('span').textContent = `File selected: ${file.name}`;
+                        displayImagePreview(file);
+                    } else {
+                        alert('Please drop an image file');
+                    }
+                }
+            });
+            
+            function displayImagePreview(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html> 
